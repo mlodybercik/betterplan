@@ -1,9 +1,29 @@
 import json
 import betterplan
+import threading
+import time
 
 plans = []
-for i in range(1,997):
-	plans.append(betterplan.parsePlan("dont think about it lmao"))
+todo = []
+
+class Collector(threading.Thread):
+	def run(self):
+		global plans
+		global todo
+		while len(todo) > 0:
+			plans.append(betterplan.parsePlan("".format(todo.pop())))
+
+todo = list(range(1, 26))
+threads = []
+
+for i in range(5):
+	threads.append(Collector())
+
+for i in range(5):
+	threads[i].start()
+
+for i in threads:
+	i.join()
 
 tp = betterplan.generatePlan(plans, "classroom")
 for i in tp.keys():
