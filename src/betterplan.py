@@ -64,12 +64,37 @@ class AdvEntry(Entry):
 		copy = cp.copy(text)
 
 		def __extractSpan(atext):
+			length = len(atext.text.split(" "))
+			if length == 3:
+				if atext.text.startswith("CKZ"):
+					currPlan.append(["CKZ", "CKZ", "CKZ"])
+					return
+				p, n, s = atext.text.split(" ")
+				currPlan.append([p, n, s])
+				return
+			elif length % 3 == 0:
+				longtext = atext.text.split(" ")
+				longtext.reverse()
+				while len(longtext) > 0:
+					s, n, p = longtext.pop(), longtext.pop(), longtext.pop()
+					currPlan.append([s,n,p])
+			else:
+				log("[__extractSpan] length % 3 != 0")
+				log("[__extractSpan] {}".format(atext))
+				if atext.text.startswith("CKZ"):
+					currPlan.append(["CKZ", "CKZ", "CKZ"])
+			
 			try:
 				p = atext.find("span", "p").text
 				n = atext.find("span", "n").text
 				s = atext.find("span", "s").text
 				# log("[__extractSpan] Adding {}, {}, {}".format(p, n, s))
 				currPlan.append([p,n,s])
+				return
+			except AttributeError:
+				p = atext.text
+				currPlan.append([p, p, p])
+				return
 			except Exception:
 				for i in divideList(copy):
 					*p, n, s = "".join(i).split()
@@ -79,18 +104,32 @@ class AdvEntry(Entry):
 						currPlan.append([p, n, s])
 					# log("[afterException] Adding {}, {}, {}".format(p, n, s))
 					copy.extract()
+				return
 
 		if text.text != "\xa0":
 			if spans > 1:
 				try:
 					for _ in range(spans):
-						asd = text.find_all("span")[0].extract()
+						asd = text.find_all("span")[0]
+						if len(asd.text.split(" ")) == 1:
+							asd = text.find_all("span")
+						else:
+							asd = text.find_all("span")[0].extract()
 						__extractSpan(asd)
 				except AttributeError:
 					try:
 						for i in divideList(copy):
-							p, _, s = "".join(i).split()
-							currPlan.append([p,"?",s])
+							try:
+								ddd = "".join(i).split(" ")
+								if len(ddd) == 3:
+									p, n, s = ddd
+									currPlan.append([p,n,s])
+								else:
+									raise Exception
+							except Exception:
+								p, _, s = "".join(i).split(" ")
+								currPlan.append([p,"?",s])
+								log(text.text, 35)
 					except Exception as e:
 						log("[AdvEntry.__parse] Something went wrong... {}".format(e), 31)
 						return currPlan
